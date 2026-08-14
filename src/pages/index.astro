@@ -121,18 +121,8 @@ import '../styles/global.css';
         </div>
         <h3>Doble enlace redundante</h3>
         <p>Dos proveedores al mismo tiempo. Si uno falla, el otro toma el control automáticamente — sin que lo notes en tu stream o partida.</p>
-        <div class="diagram">
-          <div class="diag-node purple">ISP 1<span>Primario</span></div>
-          <span class="diag-plus">+</span>
-          <div class="diag-node blue">ISP 2<span>Respaldo</span></div>
-          <span class="diag-arrow">→</span>
-          <div class="diag-node center">TP-Link<span>Failover</span></div>
-          <span class="diag-arrow">→</span>
-          <div class="diag-node cyan">Tu casa<span>WiFi 7</span></div>
-        </div>
-        <div class="failover-pill">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d8b4fe" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 5px rgba(168,85,247,0.9));flex-shrink:0"><polygon points="13,2 7,13 12,13 11,22 17,11 12,11"/></svg>
-          Failover automático en milisegundos
+        <div class="network-wrap">
+          <canvas id="network-canvas" class="network-canvas"></canvas>
         </div>
       </div>
 
@@ -363,6 +353,310 @@ import '../styles/global.css';
     }
 
     animate();
+  })();
+
+  // ── NETWORK PACKET ANIMATION ────────────────────────
+  (function initNetwork() {
+    const canvas = document.getElementById('network-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    let W = 0, H = 0;
+    const dpr = window.devicePixelRatio || 1;
+
+    let isV = false; // vertical layout flag
+
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      W = r.width; H = r.height;
+      isV = W < 460;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // Node style (color, labels) — positions set per layout
+    type NDef = { label:string; sub:string; c:string; gc:string; device?:boolean };
+    const NDEFS: Record<string, NDef> = {
+      isp1:    { label:'ISP 1',    sub:'Primario', c:'#a78bfa', gc:'124,58,237' },
+      isp2:    { label:'ISP 2',    sub:'Respaldo',  c:'#93c5fd', gc:'37,99,235'  },
+      router:  { label:'Router',   sub:'TP-Link',  c:'#c084fc', gc:'147,51,234' },
+      home:    { label:'WiFi 7',   sub:'Hub',       c:'#67e8f9', gc:'8,145,178'  },
+      cel:     { label:'Móvil',    sub:'📱',        c:'#6ee7b7', gc:'52,211,153', device:true },
+      consola: { label:'Consola',  sub:'🎮',        c:'#f9a8d4', gc:'244,114,182', device:true },
+      tv:      { label:'Smart TV', sub:'📺',        c:'#93c5fd', gc:'99,102,241', device:true },
+      cam:     { label:'Cámara',   sub:'📷',        c:'#fcd34d', gc:'251,191,36',  device:true },
+    };
+
+    // Horizontal layout (desktop)
+    const POS_H: Record<string,{rx:number;ry:number}> = {
+      isp1:{rx:0.09,ry:0.25}, isp2:{rx:0.09,ry:0.75},
+      router:{rx:0.34,ry:0.50}, home:{rx:0.57,ry:0.50},
+      cel:{rx:0.84,ry:0.13}, consola:{rx:0.84,ry:0.38},
+      tv:{rx:0.84,ry:0.63}, cam:{rx:0.84,ry:0.87},
+    };
+    const PTH_H = [
+      { id:'p0', from:'isp1',   to:'router',  cx:0.21, cy:0.12 },
+      { id:'p1', from:'isp2',   to:'router',  cx:0.21, cy:0.88 },
+      { id:'p2', from:'router', to:'home',    cx:0.45, cy:0.50 },
+      { id:'p3', from:'home',   to:'cel',     cx:0.72, cy:0.10 },
+      { id:'p4', from:'home',   to:'consola', cx:0.72, cy:0.36 },
+      { id:'p5', from:'home',   to:'tv',      cx:0.72, cy:0.64 },
+      { id:'p6', from:'home',   to:'cam',     cx:0.72, cy:0.90 },
+    ];
+
+    // Vertical layout (mobile)
+    const POS_V: Record<string,{rx:number;ry:number}> = {
+      isp1:{rx:0.25,ry:0.08}, isp2:{rx:0.75,ry:0.08},
+      router:{rx:0.50,ry:0.32}, home:{rx:0.50,ry:0.57},
+      cel:{rx:0.14,ry:0.87}, consola:{rx:0.39,ry:0.87},
+      tv:{rx:0.61,ry:0.87}, cam:{rx:0.86,ry:0.87},
+    };
+    const PTH_V = [
+      { id:'p0', from:'isp1',   to:'router',  cx:0.33, cy:0.15 },
+      { id:'p1', from:'isp2',   to:'router',  cx:0.67, cy:0.15 },
+      { id:'p2', from:'router', to:'home',    cx:0.50, cy:0.44 },
+      { id:'p3', from:'home',   to:'cel',     cx:0.20, cy:0.74 },
+      { id:'p4', from:'home',   to:'consola', cx:0.39, cy:0.75 },
+      { id:'p5', from:'home',   to:'tv',      cx:0.61, cy:0.75 },
+      { id:'p6', from:'home',   to:'cam',     cx:0.80, cy:0.74 },
+    ];
+
+    function PATHS() { return isV ? PTH_V : PTH_H; }
+    function nd(id: string) {
+      const pos = (isV ? POS_V : POS_H)[id];
+      return { x: pos.rx * W, y: pos.ry * H, rx: pos.rx, ry: pos.ry, ...NDEFS[id] };
+    }
+
+    type Path = { id:string; from:string; to:string; cx:number; cy:number };
+    function bezierPt(p: Path, t: number) {
+      const f = nd(p.from), to = nd(p.to);
+      const cx = p.cx * W, cy = p.cy * H;
+      const mt = 1 - t;
+      return { x: mt*mt*f.x + 2*mt*t*cx + t*t*to.x,
+               y: mt*mt*f.y + 2*mt*t*cy + t*t*to.y };
+    }
+
+    // Rounded rect helper
+    function rrect(x:number,y:number,w:number,h:number,r:number) {
+      ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r);
+      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+    }
+
+    // Packet pool
+    type Pkt = { path: Path; t: number; speed: number; alive: boolean };
+    const pkts: Pkt[] = [];
+    const spawn: Record<string,number> = { p0:0, p1:0, p2:0, p3:8, p4:22, p5:38, p6:54 };
+
+    // Failover state machine
+    type Phase = 'normal'|'failing'|'failover'|'recovering';
+    let phase: Phase = 'normal';
+    let phaseT = 0;
+    const DUR: Record<Phase,number> = { normal:420, failing:70, failover:160, recovering:70 };
+    const NEXT: Record<Phase,Phase> = { normal:'failing', failing:'failover', failover:'recovering', recovering:'normal' };
+
+    function tick() {
+      phaseT++;
+      if (phaseT >= DUR[phase]) { phase = NEXT[phase]; phaseT = 0; }
+    }
+
+    function isp1A() {
+      if (phase==='normal')     return 1;
+      if (phase==='failing')    return 0.9 - 0.65 * (phaseT/DUR.failing) + 0.3 * Math.abs(Math.sin(phaseT*0.35));
+      if (phase==='failover')   return 0.25;
+      return 0.25 + 0.75 * (phaseT / DUR.recovering);
+    }
+    function isp2A() {
+      if (phase==='normal')     return 0.38;
+      if (phase==='failing')    return 0.38 + 0.62 * (phaseT / DUR.failing);
+      if (phase==='failover')   return 1;
+      return 1 - 0.62 * (phaseT / DUR.recovering);
+    }
+
+    function spawnPkts() {
+      const P = PATHS();
+      if (phase !== 'failing' && phase !== 'failover') {
+        if (--spawn.p0 <= 0) { pkts.push({ path:P[0], t:0, speed:0.007+Math.random()*0.004, alive:true }); spawn.p0 = 22+Math.floor(Math.random()*14); }
+      }
+      if (phase === 'failover' || phase === 'failing') {
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.007+Math.random()*0.004, alive:true }); spawn.p1 = 22+Math.floor(Math.random()*14); }
+      } else {
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.005, alive:true }); spawn.p1 = 130+Math.floor(Math.random()*60); }
+      }
+      if (--spawn.p2 <= 0) { pkts.push({ path:P[2], t:0, speed:0.009+Math.random()*0.005, alive:true }); spawn.p2 = 18+Math.floor(Math.random()*12); }
+      const devIntervals = [40,55,46,64];
+      ['p3','p4','p5','p6'].forEach((k,i) => {
+        if (--spawn[k] <= 0) { pkts.push({ path:P[3+i], t:0, speed:0.011+Math.random()*0.005, alive:true }); spawn[k] = devIntervals[i]+Math.floor(Math.random()*18); }
+      });
+    }
+
+    const NW=54, NH=38, NWD=38, NHD=38;
+
+    function drawDeviceIcon(id: string, cx: number, cy: number, sz: number) {
+      const k = sz / 24;
+      const X = (v: number) => cx + (v - 12) * k;
+      const Y = (v: number) => cy + (v - 12) * k;
+      const S = (v: number) => v * k;
+      ctx.save();
+      ctx.strokeStyle = '#d8b4fe';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(168,85,247,0.9)';
+      ctx.shadowBlur = 7;
+
+      if (id === 'cel') {
+        rrect(X(5),Y(2),S(14),S(20),S(2)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(X(9),Y(5)); ctx.lineTo(X(15),Y(5)); ctx.stroke();
+        ctx.beginPath(); ctx.arc(X(12),Y(20),S(1.2),0,Math.PI*2);
+        ctx.fillStyle='#d8b4fe'; ctx.fill();
+      }
+      else if (id === 'consola') {
+        ctx.beginPath();
+        ctx.moveTo(X(17),Y(4)); ctx.lineTo(X(7),Y(4));
+        ctx.bezierCurveTo(X(4.24),Y(4),X(2),Y(6.24),X(2),Y(9));
+        ctx.lineTo(X(2),Y(15));
+        ctx.bezierCurveTo(X(2),Y(17.76),X(4.24),Y(20),X(7),Y(20));
+        ctx.lineTo(X(17),Y(20));
+        ctx.bezierCurveTo(X(19.76),Y(20),X(22),Y(17.76),X(22),Y(15));
+        ctx.lineTo(X(22),Y(9));
+        ctx.bezierCurveTo(X(22),Y(6.24),X(19.76),Y(4),X(17),Y(4));
+        ctx.closePath(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(X(6),Y(12)); ctx.lineTo(X(10),Y(12));
+        ctx.moveTo(X(8),Y(10)); ctx.lineTo(X(8),Y(14));
+        ctx.stroke();
+        ctx.fillStyle='#d8b4fe';
+        ctx.beginPath(); ctx.arc(X(15.5),Y(11),S(1.2),0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(X(18.5),Y(13),S(1.2),0,Math.PI*2); ctx.fill();
+      }
+      else if (id === 'tv') {
+        rrect(X(1),Y(3),S(22),S(13),S(2)); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(X(9),Y(16)); ctx.lineTo(X(9),Y(21));
+        ctx.moveTo(X(15),Y(16)); ctx.lineTo(X(15),Y(21));
+        ctx.moveTo(X(5),Y(21)); ctx.lineTo(X(19),Y(21));
+        ctx.stroke();
+      }
+      else if (id === 'cam') {
+        rrect(X(1),Y(6),S(22),S(14),S(3)); ctx.stroke();
+        ctx.beginPath(); ctx.arc(X(12),Y(13),S(4),0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle='#d8b4fe';
+        ctx.beginPath(); ctx.arc(X(12),Y(13),S(1.5),0,Math.PI*2); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(X(8),Y(6)); ctx.lineTo(X(10),Y(3)); ctx.lineTo(X(14),Y(3)); ctx.lineTo(X(16),Y(6));
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(X(19),Y(9),S(1.5),0,Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawNode(id: string, alpha: number, error = false) {
+      const n = nd(id);
+      const isD = !!n.device, nw = isD?NWD:NW, nh = isD?NHD:NH;
+      ctx.save(); ctx.globalAlpha = alpha;
+      // halo
+      const rad = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,nw*0.9);
+      rad.addColorStop(0,`rgba(${n.gc},${isD?0.1:0.18})`); rad.addColorStop(1,`rgba(${n.gc},0)`);
+      ctx.fillStyle=rad; ctx.beginPath(); ctx.ellipse(n.x,n.y,nw*0.9,nw*0.55,0,0,Math.PI*2); ctx.fill();
+      // box
+      rrect(n.x-nw/2,n.y-nh/2,nw,nh,7);
+      ctx.fillStyle='rgba(4,2,18,0.88)'; ctx.fill();
+      if (error) { ctx.shadowColor='#ef4444'; ctx.shadowBlur=10; }
+      ctx.strokeStyle=error?'#f87171':n.c; ctx.lineWidth=isD?0.9:1.2; ctx.stroke(); ctx.shadowBlur=0;
+      // labels / icon
+      ctx.textAlign='center';
+      if (isD) {
+        drawDeviceIcon(id, n.x, n.y, 22);
+      } else {
+        const fs=Math.max(8,Math.min(10,W/58));
+        ctx.fillStyle=error?'#fca5a5':n.c; ctx.font=`700 ${fs}px Inter,system-ui,sans-serif`; ctx.textBaseline='alphabetic';
+        ctx.fillText(n.label,n.x,n.y+3);
+        ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.font=`${fs-1}px Inter,system-ui,sans-serif`; ctx.fillText(n.sub,n.x,n.y+13);
+      }
+      ctx.restore();
+    }
+
+    function drawLine(p: Path, alpha: number, gc: string) {
+      const f = nd(p.from), to = nd(p.to);
+      const fW=f.device?NWD:NW, fH=f.device?NHD:NH;
+      const tW=to.device?NWD:NW, tH=to.device?NHD:NH;
+      const dx=Math.abs(to.x-f.x), dy=Math.abs(to.y-f.y);
+      let sx, sy, ex, ey;
+      if (dx >= dy) {
+        const goR=to.x>f.x; sx=f.x+(goR?fW/2:-fW/2); sy=f.y; ex=to.x-(goR?tW/2:-tW/2); ey=to.y;
+      } else {
+        const goD=to.y>f.y; sx=f.x; sy=f.y+(goD?fH/2:-fH/2); ex=to.x; ey=to.y-(goD?tH/2:-tH/2);
+      }
+      ctx.save(); ctx.globalAlpha=alpha;
+      ctx.strokeStyle=`rgba(${gc},0.55)`; ctx.lineWidth=0.9; ctx.setLineDash([3,8]);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo(p.cx*W,p.cy*H,ex,ey);
+      ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    }
+
+    function drawPkt(pkt: Pkt) {
+      const pos = bezierPt(pkt.path, pkt.t);
+      const gc = NDEFS[pkt.path.from].gc;
+      ctx.save();
+      const g = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,8);
+      g.addColorStop(0,`rgba(${gc},1)`); g.addColorStop(0.45,`rgba(${gc},0.45)`); g.addColorStop(1,`rgba(${gc},0)`);
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pos.x,pos.y,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pos.x,pos.y,2,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawStatus() {
+      if (phase==='normal' || phase==='recovering') return;
+      const msg = phase==='failing' ? '⚡ ISP 1 fallando...' : '✓ Failover activo — ISP 2';
+      const col = phase==='failing' ? '#fbbf24' : '#34d399';
+      const a = Math.min(1, phaseT/18);
+      ctx.save(); ctx.globalAlpha = a*0.92;
+      ctx.fillStyle = col;
+      ctx.font = `700 ${Math.max(9,Math.min(11,W/55))}px Inter,system-ui,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(msg, W/2, 7);
+      ctx.restore();
+    }
+
+    function frame() {
+      tick(); spawnPkts();
+      for (const p of pkts) { p.t += p.speed; p.alive = p.t < 1; }
+      pkts.splice(0, pkts.length, ...pkts.filter(p => p.alive));
+      ctx.clearRect(0,0,W,H);
+      const a1=isp1A(), a2=isp2A();
+      // lines
+      const P = PATHS();
+      drawLine(P[0], Math.max(0.12,a1*0.5), NDEFS.isp1.gc);
+      drawLine(P[1], Math.max(0.08,a2*0.5), NDEFS.isp2.gc);
+      drawLine(P[2], 0.40, NDEFS.router.gc);
+      drawLine(P[3], 0.35, NDEFS.home.gc);
+      drawLine(P[4], 0.35, NDEFS.home.gc);
+      drawLine(P[5], 0.35, NDEFS.home.gc);
+      drawLine(P[6], 0.35, NDEFS.home.gc);
+      // packets
+      pkts.forEach(drawPkt);
+      // nodes (infra)
+      drawNode('isp1', a1, phase==='failing');
+      drawNode('isp2', a2);
+      drawNode('router', 1);
+      drawNode('home', 1);
+      // nodes (devices)
+      drawNode('cel', 1);
+      drawNode('consola', 1);
+      drawNode('tv', 1);
+      drawNode('cam', 1);
+      drawStatus();
+      requestAnimationFrame(frame);
+    }
+
+    // wait one frame so layout is settled
+    requestAnimationFrame(() => { resize(); requestAnimationFrame(frame); });
   })();
 </script>
 
@@ -761,7 +1055,7 @@ import '../styles/global.css';
     grid-column: span 2;
     grid-row: span 2;
     padding: 36px;
-    min-height: 340px;
+    min-height: 380px;
     display: flex; flex-direction: column; justify-content: space-between;
   }
   .card-lg h3 { font-size: 1.25rem; margin-bottom: 12px; }
@@ -782,30 +1076,15 @@ import '../styles/global.css';
     animation: livepulse 2s ease-in-out infinite;
   }
 
-  /* diagram */
-  .diagram {
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap; margin-top: 28px;
+  /* network animation */
+  .network-wrap {
+    flex: 1; min-height: 210px; margin-top: 20px;
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(124,58,237,0.18);
+    background: rgba(0,0,0,0.25);
+    position: relative;
   }
-  .diag-node {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 10px 18px; border-radius: 12px;
-    font-size: 0.82rem; font-weight: 700; gap: 4px;
-  }
-  .diag-node span { font-size: 0.62rem; font-weight: 500; opacity: 0.6; letter-spacing: 0.04em; }
-  .diag-node.purple { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); color: #c084fc; }
-  .diag-node.blue   { background: rgba(37,99,235,0.12);  border: 1px solid rgba(37,99,235,0.28);  color: #93c5fd; }
-  .diag-node.center { background: linear-gradient(135deg,rgba(124,58,237,0.18),rgba(37,99,235,0.14)); border: 1px solid rgba(124,58,237,0.35); color: #e2d9f3; }
-  .diag-node.cyan   { background: rgba(8,145,178,0.12);  border: 1px solid rgba(8,145,178,0.26);  color: #7dd3fc; }
-  .diag-plus, .diag-arrow { color: #3f3f46; font-size: 1.1rem; flex-shrink: 0; }
-
-  .failover-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(8,145,178,0.07);
-    border: 1px solid rgba(8,145,178,0.18);
-    color: #38bdf8; padding: 10px 16px; border-radius: 10px;
-    font-size: 0.8rem; font-weight: 600; margin-top: 20px;
-  }
+  .network-canvas { width: 100%; height: 100%; display: block; }
 
   /* speed bars */
   .card-label { font-size: 0.68rem; color: #52525b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 6px; }
@@ -994,6 +1273,7 @@ import '../styles/global.css';
     .stat { padding: 14px 20px; }
   }
   @media (max-width: 600px) {
+    .network-wrap { min-height: 300px; }
     .bento { grid-template-columns: 1fr; }
     .card-lg { grid-column: span 1; }
     .diagram { flex-direction: column; align-items: flex-start; }
