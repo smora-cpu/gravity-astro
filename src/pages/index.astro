@@ -647,10 +647,10 @@ import '../styles/global.css';
   }
 
   .hero-sub {
-    font-size: 1.05rem; color: #71717a; line-height: 1.75;
+    font-size: 1.05rem; color: #a1a1aa; line-height: 1.75;
     max-width: 540px;
   }
-  .hero-sub strong { color: #a1a1aa; font-weight: 600; }
+  .hero-sub strong { color: #d4d4d8; font-weight: 600; }
 
   .hero-actions {
     display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
@@ -1000,5 +1000,14 @@ import '../styles/global.css';
     .hero-stats { flex-wrap: wrap; justify-content: center; }
     .stat-sep { display: none; }
     .cta-inner { padding: 40px 24px; }
+    .hero-inner {
+      background: rgba(7,7,14,0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 36px 24px;
+    }
+    .hero-sub { font-size: 1rem; }
   }
 </style>
