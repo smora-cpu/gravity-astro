@@ -292,7 +292,7 @@ import '../styles/global.css';
     const ctx = canvas.getContext('2d')!;
     ctx.scale(dpr, dpr);
 
-    const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json());
+    const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(r => r.json());
     const countries = feature(world, world.objects.countries);
     const borders   = mesh(world, world.objects.countries, (a: any, b: any) => a !== b);
     const sphere    = { type: 'Sphere' } as const;
@@ -318,30 +318,30 @@ import '../styles/global.css';
 
       // Graticule
       ctx.beginPath(); pathGen(graticule);
-      ctx.strokeStyle = 'rgba(109,40,217,0.08)';
-      ctx.lineWidth = 0.4;
+      ctx.strokeStyle = 'rgba(109,40,217,0.13)';
+      ctx.lineWidth = 0.5;
       ctx.stroke();
 
       // Continents
       ctx.beginPath(); pathGen(countries);
-      ctx.fillStyle = 'rgba(88,28,220,0.4)';
+      ctx.fillStyle = 'rgba(88,28,220,0.45)';
       ctx.fill();
 
       // Continent glow pass
       ctx.beginPath(); pathGen(countries);
-      ctx.fillStyle = 'rgba(139,92,246,0.14)';
+      ctx.fillStyle = 'rgba(139,92,246,0.18)';
       ctx.fill();
 
       // Country borders
       ctx.beginPath(); pathGen(borders);
-      ctx.strokeStyle = 'rgba(167,139,250,0.5)';
-      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(167,139,250,0.75)';
+      ctx.lineWidth = 0.7;
       ctx.stroke();
 
       // Sphere edge
       ctx.beginPath(); pathGen(sphere);
-      ctx.strokeStyle = 'rgba(139,92,246,0.1)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(139,92,246,0.18)';
+      ctx.lineWidth = 1.2;
       ctx.stroke();
     }
 
@@ -842,7 +842,6 @@ import '../styles/global.css';
     flex-shrink: 0;
     border-radius: 50%;
     overflow: hidden;
-    filter: blur(2.5px);
     transform: translateX(32%);
     box-shadow:
       0 0 0 2px rgba(167,139,250,0.5),
