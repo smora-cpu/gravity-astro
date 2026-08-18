@@ -482,17 +482,17 @@ import '../styles/global.css';
     function spawnPkts() {
       const P = PATHS();
       if (phase !== 'failing' && phase !== 'failover') {
-        if (--spawn.p0 <= 0) { pkts.push({ path:P[0], t:0, speed:0.007+Math.random()*0.004, alive:true }); spawn.p0 = 22+Math.floor(Math.random()*14); }
+        if (--spawn.p0 <= 0) { pkts.push({ path:P[0], t:0, speed:0.04+Math.random()*0.02, alive:true }); spawn.p0 = 6+Math.floor(Math.random()*5); }
       }
       if (phase === 'failover' || phase === 'failing') {
-        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.007+Math.random()*0.004, alive:true }); spawn.p1 = 22+Math.floor(Math.random()*14); }
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.04+Math.random()*0.02, alive:true }); spawn.p1 = 6+Math.floor(Math.random()*5); }
       } else {
-        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.005, alive:true }); spawn.p1 = 130+Math.floor(Math.random()*60); }
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.03, alive:true }); spawn.p1 = 50+Math.floor(Math.random()*20); }
       }
-      if (--spawn.p2 <= 0) { pkts.push({ path:P[2], t:0, speed:0.009+Math.random()*0.005, alive:true }); spawn.p2 = 18+Math.floor(Math.random()*12); }
-      const devIntervals = [40,55,46,64];
+      if (--spawn.p2 <= 0) { pkts.push({ path:P[2], t:0, speed:0.045+Math.random()*0.015, alive:true }); spawn.p2 = 5+Math.floor(Math.random()*4); }
+      const devIntervals = [12,16,14,18];
       ['p3','p4','p5','p6'].forEach((k,i) => {
-        if (--spawn[k] <= 0) { pkts.push({ path:P[3+i], t:0, speed:0.011+Math.random()*0.005, alive:true }); spawn[k] = devIntervals[i]+Math.floor(Math.random()*18); }
+        if (--spawn[k] <= 0) { pkts.push({ path:P[3+i], t:0, speed:0.05+Math.random()*0.015, alive:true }); spawn[k] = devIntervals[i]+Math.floor(Math.random()*6); }
       });
     }
 
@@ -604,10 +604,11 @@ import '../styles/global.css';
       const pos = bezierPt(pkt.path, pkt.t);
       const gc = NDEFS[pkt.path.from].gc;
       ctx.save();
-      const g = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,8);
-      g.addColorStop(0,`rgba(${gc},1)`); g.addColorStop(0.45,`rgba(${gc},0.45)`); g.addColorStop(1,`rgba(${gc},0)`);
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pos.x,pos.y,8,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pos.x,pos.y,2,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 10; ctx.shadowColor = `rgba(${gc},0.9)`;
+      ctx.fillStyle = `rgba(${gc},1)`;
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,3,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pos.x,pos.y,1.5,0,Math.PI*2); ctx.fill();
       ctx.restore();
     }
 
@@ -627,7 +628,7 @@ import '../styles/global.css';
     function frame() {
       tick(); spawnPkts();
       for (const p of pkts) { p.t += p.speed; p.alive = p.t < 1; }
-      pkts.splice(0, pkts.length, ...pkts.filter(p => p.alive));
+      for (let i = pkts.length - 1; i >= 0; i--) { if (!pkts[i].alive) pkts.splice(i,1); }
       ctx.clearRect(0,0,W,H);
       const a1=isp1A(), a2=isp2A();
       // lines
