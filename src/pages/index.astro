@@ -120,7 +120,7 @@ import '../styles/global.css';
           Siempre activo
         </div>
         <h3>Doble enlace redundante</h3>
-        <p>Dos proveedores al mismo tiempo. Si uno falla, el otro toma el control automáticamente — sin que lo notes en tu stream o partida.</p>
+        <p>Con un solo proveedor, una falla puede dejarte <strong>sin internet por días</strong> mientras esperas que lo reparen. Gravity conecta dos proveedores a un router especial: si uno cae, el otro <strong>entra al instante</strong> — y <strong>nosotros gestionamos la reparación</strong>, sin que tengas que hacer nada.</p>
         <div class="network-wrap">
           <canvas id="network-canvas" class="network-canvas"></canvas>
         </div>
@@ -153,8 +153,8 @@ import '../styles/global.css';
             <path d="M1.5 9.5a15 15 0 0 1 21 0"/>
           </svg>
         </div>
-        <h3>WiFi 7</h3>
-        <p>2 puntos de acceso instalados estratégicamente. Sin zonas muertas en ningún cuarto.</p>
+        <h3>WiFi 7 Enterprise</h3>
+        <p><strong>Incluidos en tu plan:</strong> 2 puntos de acceso WiFi 7 Enterprise para garantizar <strong>cobertura total sin zonas muertas</strong> en todo tu espacio. Si necesitas más alcance, escala hasta 5 APs.</p>
       </div>
 
       <!-- Latencia -->
@@ -172,8 +172,8 @@ import '../styles/global.css';
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
           </svg>
         </div>
-        <h3>Instalación incluida</h3>
-        <p>Cableado, APs posicionados y router configurado desde el día uno.</p>
+        <h3>Instalación profesional</h3>
+        <p>Nuestro equipo instala todo — red, contraseña, aparatos y cableado — <strong>adaptado exactamente a tu espacio</strong>. Sin improvisaciones: para que <strong>funcione perfecto desde el primer día</strong>.</p>
       </div>
 
       <!-- Soporte -->
@@ -186,7 +186,7 @@ import '../styles/global.css';
           </svg>
         </div>
         <h3>Soporte dedicado</h3>
-        <p>Atención directa con el equipo de Ascatarsis, no con un call center.</p>
+        <p><strong>Atención directa</strong> con el equipo de Ascatarsis — no con un call center.</p>
         <div class="online-pill">
           <span class="dot-green"></span>
           Online ahora
@@ -210,7 +210,7 @@ import '../styles/global.css';
         <p class="plan-name">Gravity 350</p>
         <p class="plan-speed">350 Mbps simétrico</p>
         <div class="plan-price"><sup>$</sup>2,600<sub>/mes</sub></div>
-        <p class="plan-activation">Activación: <strong>$16,700</strong></p>
+        <p class="plan-activation">Equipamiento e instalación: <strong>$16,700</strong></p>
         <ul class="plan-list">
           {['350 Mbps (↓↑)', 'ISP 1 + ISP 2', 'Failover automático', '2× WiFi 7 APs', 'Router TP-Link Pro', 'Cableado estructurado', 'Soporte dedicado'].map(f => <li>{f}</li>)}
         </ul>
@@ -225,7 +225,7 @@ import '../styles/global.css';
         <p class="plan-name" style="color:#c084fc">Gravity 750</p>
         <p class="plan-speed">750 Mbps simétrico</p>
         <div class="plan-price featured-price"><sup>$</sup>4,600<sub>/mes</sub></div>
-        <p class="plan-activation">Activación: <strong>$18,700</strong></p>
+        <p class="plan-activation">Equipamiento e instalación: <strong>$18,700</strong></p>
         <ul class="plan-list">
           {['750 Mbps (↓↑)', 'ISP 1 + ISP 2', 'Failover prioritario', '2× WiFi 7 APs', 'Router TP-Link Pro', 'Cableado estructurado', 'Soporte dedicado'].map(f => <li>{f}</li>)}
         </ul>
@@ -236,7 +236,7 @@ import '../styles/global.css';
         <p class="plan-name">Gravity 1G</p>
         <p class="plan-speed">1 Gbps simétrico</p>
         <div class="plan-price"><sup>$</sup>7,600<sub>/mes</sub></div>
-        <p class="plan-activation">Activación: <strong>$21,700</strong></p>
+        <p class="plan-activation">Equipamiento e instalación: <strong>$21,700</strong></p>
         <ul class="plan-list">
           {['1 Gbps (↓↑)', 'ISP 1 + ISP 2', 'Failover prioritario', '2× WiFi 7 APs', 'Router TP-Link Pro', 'Cableado estructurado', 'Soporte dedicado'].map(f => <li>{f}</li>)}
         </ul>
@@ -940,10 +940,10 @@ import '../styles/global.css';
   }
 
   .hero-sub {
-    font-size: 1.05rem; color: #a1a1aa; line-height: 1.75;
+    font-size: 1.05rem; color: #d4d4d8; line-height: 1.75;
     max-width: 540px;
   }
-  .hero-sub strong { color: #d4d4d8; font-weight: 600; }
+  .hero-sub strong { color: #ffffff; font-weight: 600; }
 
   .hero-actions {
     display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
@@ -1045,10 +1045,12 @@ import '../styles/global.css';
   .card:hover { border-color: rgba(124,58,237,0.3); transform: translateY(-3px); }
   .card:hover::before { opacity: 1; }
   .card h3 {
-    font-size: 1rem; font-weight: 700; color: white;
-    margin-bottom: 8px; letter-spacing: -0.01em;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.15rem; font-weight: 700; color: white;
+    margin-bottom: 10px; letter-spacing: -0.03em; line-height: 1.2;
   }
-  .card p { font-size: 0.875rem; color: #71717a; line-height: 1.65; }
+  .card p { font-size: 0.9rem; color: #a1a1aa; line-height: 1.7; }
+  .card p strong { color: #c4b5fd; font-weight: 600; }
 
   .card-lg {
     grid-column: span 2;
@@ -1057,7 +1059,7 @@ import '../styles/global.css';
     min-height: 380px;
     display: flex; flex-direction: column; justify-content: space-between;
   }
-  .card-lg h3 { font-size: 1.25rem; margin-bottom: 12px; }
+  .card-lg h3 { font-size: 1.5rem; margin-bottom: 12px; }
   .card-lg p { font-size: 0.92rem; max-width: 420px; }
 
   .card-tag {
@@ -1087,7 +1089,7 @@ import '../styles/global.css';
 
   /* speed bars */
   .card-label { font-size: 0.68rem; color: #52525b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 6px; }
-  .card-sub   { font-size: 0.82rem; color: #71717a; margin-bottom: 20px; }
+  .card-sub   { font-size: 0.82rem; color: #a1a1aa; margin-bottom: 20px; }
   .bars { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
   .bar-row {
     display: flex; justify-content: space-between;
