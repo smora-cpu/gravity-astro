@@ -346,7 +346,7 @@ import '../styles/global.css';
     }
 
     function animate() {
-      angle += 0.04;
+      angle += 0.12;
       projection.rotate([angle, -25]);
       draw();
       requestAnimationFrame(animate);
@@ -449,10 +449,6 @@ import '../styles/global.css';
       ctx.closePath();
     }
 
-    // Packet pool
-    type Pkt = { path: Path; t: number; speed: number; alive: boolean };
-    const pkts: Pkt[] = [];
-    const spawn: Record<string,number> = { p0:0, p1:0, p2:0, p3:8, p4:22, p5:38, p6:54 };
 
     // Failover state machine
     type Phase = 'normal'|'failing'|'failover'|'recovering';
@@ -479,21 +475,38 @@ import '../styles/global.css';
       return 1 - 0.62 * (phaseT / DUR.recovering);
     }
 
+
+    type Pkt = { path: Path; t: number; speed: number; alive: boolean };
+    const pkts: Pkt[] = [];
+    const spawn: Record<string,number> = { p0:0, p1:0, p2:0, p3:8, p4:22, p5:38, p6:54 };
+
     function spawnPkts() {
       const P = PATHS();
       if (phase !== 'failing' && phase !== 'failover') {
-        if (--spawn.p0 <= 0) { pkts.push({ path:P[0], t:0, speed:0.04+Math.random()*0.02, alive:true }); spawn.p0 = 6+Math.floor(Math.random()*5); }
+        if (--spawn.p0 <= 0) { pkts.push({ path:P[0], t:0, speed:0.062+Math.random()*0.02, alive:true }); spawn.p0 = 3+Math.floor(Math.random()*3); }
       }
       if (phase === 'failover' || phase === 'failing') {
-        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.04+Math.random()*0.02, alive:true }); spawn.p1 = 6+Math.floor(Math.random()*5); }
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.062+Math.random()*0.02, alive:true }); spawn.p1 = 3+Math.floor(Math.random()*3); }
       } else {
-        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.03, alive:true }); spawn.p1 = 50+Math.floor(Math.random()*20); }
+        if (--spawn.p1 <= 0) { pkts.push({ path:P[1], t:0, speed:0.05, alive:true }); spawn.p1 = 30+Math.floor(Math.random()*10); }
       }
-      if (--spawn.p2 <= 0) { pkts.push({ path:P[2], t:0, speed:0.045+Math.random()*0.015, alive:true }); spawn.p2 = 5+Math.floor(Math.random()*4); }
-      const devIntervals = [12,16,14,18];
+      if (--spawn.p2 <= 0) { pkts.push({ path:P[2], t:0, speed:0.062+Math.random()*0.02, alive:true }); spawn.p2 = 3+Math.floor(Math.random()*2); }
+      const devIntervals = [6,8,7,9];
       ['p3','p4','p5','p6'].forEach((k,i) => {
-        if (--spawn[k] <= 0) { pkts.push({ path:P[3+i], t:0, speed:0.05+Math.random()*0.015, alive:true }); spawn[k] = devIntervals[i]+Math.floor(Math.random()*6); }
+        if (--spawn[k] <= 0) { pkts.push({ path:P[3+i], t:0, speed:0.068+Math.random()*0.02, alive:true }); spawn[k] = devIntervals[i]+Math.floor(Math.random()*4); }
       });
+    }
+
+    function drawPkt(pkt: Pkt) {
+      const pos = bezierPt(pkt.path, pkt.t);
+      const gc = NDEFS[pkt.path.from].gc;
+      ctx.save();
+      ctx.shadowBlur = 10; ctx.shadowColor = `rgba(${gc},0.9)`;
+      ctx.fillStyle = `rgba(${gc},1)`;
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,3,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pos.x,pos.y,1.5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
     }
 
     const NW=54, NH=38, NWD=38, NHD=38;
@@ -600,17 +613,6 @@ import '../styles/global.css';
       ctx.stroke(); ctx.setLineDash([]); ctx.restore();
     }
 
-    function drawPkt(pkt: Pkt) {
-      const pos = bezierPt(pkt.path, pkt.t);
-      const gc = NDEFS[pkt.path.from].gc;
-      ctx.save();
-      ctx.shadowBlur = 10; ctx.shadowColor = `rgba(${gc},0.9)`;
-      ctx.fillStyle = `rgba(${gc},1)`;
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,3,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pos.x,pos.y,1.5,0,Math.PI*2); ctx.fill();
-      ctx.restore();
-    }
 
     function drawStatus() {
       if (phase==='normal' || phase==='recovering') return;
@@ -631,7 +633,6 @@ import '../styles/global.css';
       for (let i = pkts.length - 1; i >= 0; i--) { if (!pkts[i].alive) pkts.splice(i,1); }
       ctx.clearRect(0,0,W,H);
       const a1=isp1A(), a2=isp2A();
-      // lines
       const P = PATHS();
       drawLine(P[0], Math.max(0.12,a1*0.5), NDEFS.isp1.gc);
       drawLine(P[1], Math.max(0.08,a2*0.5), NDEFS.isp2.gc);
@@ -640,14 +641,11 @@ import '../styles/global.css';
       drawLine(P[4], 0.35, NDEFS.home.gc);
       drawLine(P[5], 0.35, NDEFS.home.gc);
       drawLine(P[6], 0.35, NDEFS.home.gc);
-      // packets
       pkts.forEach(drawPkt);
-      // nodes (infra)
       drawNode('isp1', a1, phase==='failing');
       drawNode('isp2', a2);
       drawNode('router', 1);
       drawNode('home', 1);
-      // nodes (devices)
       drawNode('cel', 1);
       drawNode('consola', 1);
       drawNode('tv', 1);
