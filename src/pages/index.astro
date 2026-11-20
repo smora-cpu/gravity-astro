@@ -1,5 +1,36 @@
 ---
 import '../styles/global.css';
+// Fuentes self-hosted (sin render-blocking a Google Fonts).
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/inter/800.css';
+import '@fontsource/inter/900.css';
+import '@fontsource/space-grotesk/700.css';
+
+const schema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Service',
+      name: 'Gravity — Internet para gamers y streamers',
+      serviceType: 'Internet simétrico de alta velocidad para gamers y streamers',
+      description:
+        'Internet simétrico con doble enlace redundante para gamers, streamers e influencers. Planes de 350 Mbps, 750 Mbps y 1 Gbps con WiFi 7 incluido.',
+      provider: { '@type': 'Organization', name: 'Ascatarsis', url: 'https://ascatarsis.com' },
+      areaServed: 'Ciudad de México',
+      url: 'https://ascatarsis.com/gravity',
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Inicio', item: 'https://ascatarsis.com/' },
+        { '@type': 'ListItem', position: 2, name: 'Gravity', item: 'https://ascatarsis.com/gravity' },
+      ],
+    },
+  ],
+});
 ---
 
 <!DOCTYPE html>
@@ -9,9 +40,24 @@ import '../styles/global.css';
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gravity — Internet para gamers y streamers</title>
   <meta name="description" content="Internet simétrico con doble enlace redundante para gamers, streamers e influencers. 350 Mbps, 750 Mbps y 1 Gbps con WiFi 7 incluido." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
+  <link rel="canonical" href="https://ascatarsis.com/gravity" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Ascatarsis" />
+  <meta property="og:locale" content="es_MX" />
+  <meta property="og:title" content="Gravity — Internet para gamers y streamers" />
+  <meta property="og:description" content="Internet simétrico con doble enlace redundante para gamers, streamers e influencers. 350 Mbps, 750 Mbps y 1 Gbps con WiFi 7 incluido." />
+  <meta property="og:url" content="https://ascatarsis.com/gravity" />
+  <meta property="og:image" content="https://ascatarsis.com/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Gravity — Internet para gamers y streamers" />
+  <meta name="twitter:description" content="Internet simétrico con doble enlace redundante para gamers, streamers e influencers. 350 Mbps, 750 Mbps y 1 Gbps con WiFi 7 incluido." />
+  <meta name="twitter:image" content="https://ascatarsis.com/og.png" />
+
+  <script type="application/ld+json" set:html={schema} />
 </head>
 <body>
 
